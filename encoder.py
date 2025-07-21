@@ -7,21 +7,42 @@ decoder = """?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R?p4R!0_R#0S
 # Template that prints to stdout
 template_shellcode = b"\x18\x10\x8f\xe2\x18\x20\xa0\xe3\x01\x00\xa0\xe3\x04\x70\xa0\xe3\x00\x00\x00\xef\x01\x70\xa0\xe3\x00\x00\xa0\xe3\x00\x00\x00\xef\x48\x65\x6c\x6c\x6f\x2c\x20\x41\x52\x4d\x76\x37\x20\x53\x68\x65\x6c\x6c\x63\x6f\x64\x65\x21\x0a"
 
-template_c_code = """#include <sys/mman.h>
-#include <stdio.h>
-#include <stdint.h>
+template_c_code = """#include<sys/mman.h>
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+#include<unistd.h>
 
-unsigned char shellcode[] = "{shellcode}";
+
+unsigned char shellcode[]="{shellcode}";
+size_t shellcode_len=sizeof(shellcode)-1; // -1 to exclude the null terminator
 
 int main() {{
-    uintptr_t addr=(uintptr_t)shellcode;
-    uintptr_t pagestart  =  addr & ~4095;
+    // 1. Determine the page size
+    long page_size=sysconf(_SC_PAGESIZE);
+    if (page_size==-1) {{
+        perror("sysconf");
+        exit(EXIT_FAILURE);
+    }}
 
-    mprotect((void *)pagestart, 16384, PROT_READ | PROT_WRITE | PROT_EXEC);
-    (*(void (*)())shellcode)();
+    // 2. Allocate new memory with PROT_READ | PROT_WRITE | PROT_EXEC
+    void *exec_mem=mmap(NULL, shellcode_len,
+                          PROT_READ | PROT_WRITE | PROT_EXEC,
+                          MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (exec_mem==MAP_FAILED) {{
+        perror("mmap failed");
+        exit(EXIT_FAILURE);
+    }}
+
+    // 3. Copy the shellcode into the newly allocated memory
+    memcpy(exec_mem, shellcode, shellcode_len);
+    __builtin___clear_cache(exec_mem, exec_mem + shellcode_len);
+    void (*func)()=(void (*)())exec_mem;
+    func();
+
     return 0;
-}}
-"""
+}}"""
 
 def encode(p: bytes) -> str:
     if len(p) % 3 != 0:

